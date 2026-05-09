@@ -1,0 +1,128 @@
+// DNI de la Mascota - Database Schema
+// Plataforma de gestión veterinaria para Perú
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  fullName     String
+  email        String   @unique
+  phone        String
+  passwordHash String
+  district     String?
+  city         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  pets         Pet[]
+}
+
+model Pet {
+  id               String            @id @default(uuid())
+  ownerId          String
+  name             String
+  species          String            // 'perro', 'gato', 'otro'
+  breed            String?
+  birthDate        DateTime?
+  weightKg         Float?
+  sex              String?           // 'macho', 'hembra'
+  microchipNumber  String?
+  notes            String?
+  profilePhotoUrl  String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  owner            User              @relation(fields: [ownerId], references: [id])
+  vaccinations     VaccinationRecord[]
+  media            Media[]
+  conditions       PetCondition[]
+  qrCode           QrCode?
+}
+
+model StandardVaccine {
+  id                   Int                 @id @default(autoincrement())
+  name                 String
+  targetSpecies        String              // 'perro', 'gato', 'ambos'
+  description          String?
+  recommendedFrequency String?
+  displayOrder         Int                 @default(0)
+  isActive             Boolean             @default(true)
+  vaccinations         VaccinationRecord[]
+}
+
+model VaccinationRecord {
+  id                  String          @id @default(uuid())
+  petId               String
+  vaccineId           Int
+  applicationDate     DateTime
+  nextDoseDate        DateTime?
+  batchNumber         String?
+  veterinarianName    String?
+  clinicId            String?
+  certificatePhotoUrl String?
+  notes               String?
+  createdAt           DateTime        @default(now())
+  pet                 Pet             @relation(fields: [petId], references: [id], onDelete: Cascade)
+  vaccine             StandardVaccine @relation(fields: [vaccineId], references: [id])
+  clinic              Clinic?         @relation(fields: [clinicId], references: [id])
+}
+
+model Media {
+  id           String   @id @default(uuid())
+  petId        String
+  mediaType    String   // 'photo', 'certificate', 'document'
+  fileUrl      String
+  thumbnailUrl String?
+  caption      String?
+  uploadedAt   DateTime @default(now())
+  pet          Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+}
+
+model Clinic {
+  id           String              @id @default(uuid())
+  name         String
+  ruc          String?
+  address      String?
+  district     String?
+  city         String?
+  phone        String?
+  email        String?
+  isAffiliated Boolean             @default(false)
+  monthlyFee   Float?
+  createdAt    DateTime            @default(now())
+  vaccinations VaccinationRecord[]
+}
+
+model QrCode {
+  id          String   @id @default(uuid())
+  petId       String   @unique
+  shortCode   String   @unique
+  isActive    Boolean  @default(true)
+  generatedAt DateTime @default(now())
+  pet         Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+}
+
+model ConditionCatalog {
+  id            Int            @id @default(autoincrement())
+  name          String
+  category      String         // 'alergia', 'enfermedad_cronica', 'condicion'
+  targetSpecies String         // 'perro', 'gato', 'ambos'
+  isActive      Boolean        @default(true)
+  conditions    PetCondition[]
+}
+
+model PetCondition {
+  id            String           @id @default(uuid())
+  petId         String
+  conditionId   Int
+  diagnosedDate DateTime?
+  notes         String?
+  isCurrent     Boolean          @default(true)
+  createdAt     DateTime         @default(now())
+  pet           Pet              @relation(fields: [petId], references: [id], onDelete: Cascade)
+  condition     ConditionCatalog @relation(fields: [conditionId], references: [id])
+}
